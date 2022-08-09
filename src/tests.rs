@@ -22,11 +22,21 @@ async fn test() {
         database_url,
         downloads_path,
         log_level: None,
-        keys: vec!["password".to_owned()].into_iter().collect(),
+        admin_keys: vec!["admin_password".to_owned()].into_iter().collect(),
     }));
     let pool = crate::db::connect(&config.database_url).await.unwrap();
 
     let routes = crate::routes::handler(pool, config);
+
+    // Upload our mod upload key
+    let reply = warp::test::request()
+        .path("/publish_key")
+        .method("POST")
+        .header("Authorization", "admin_password")
+        .body(b"{\"user\": \"test\", \"pw\": \"password\"}")
+        .reply(&routes)
+        .await;
+    assert_eq!(reply.status(), StatusCode::CREATED);
 
     // Upload some mods
 
@@ -165,4 +175,47 @@ async fn test() {
         serde_json::from_slice::<'_, Vec<&str>>(reply.body().as_ref()).unwrap(),
         vec!["bshook", "hsv"]
     );
+
+    // Delete mod
+    let reply = warp::test::request()
+        .path("/hsv/2.3.4")
+        .method("DELETE")
+        .header("Authorization", "admin_password")
+        .body(b"hsv-2.3.4")
+        .reply(&routes)
+        .await;
+    assert_eq!(reply.status(), StatusCode::OK);
+
+    // Confirm mod deleted
+    let reply = warp::test::request()
+        .path("/hsv/2.3.4")
+        .method("POST")
+        .header("Authorization", "password")
+        .body(b"hsv-2.3.4")
+        .reply(&routes)
+        .await;
+    assert_eq!(reply.status(), StatusCode::CREATED);
+
+    // Delete key
+    let reply = warp::test::request()
+        .path("/delete_key")
+        .method("POST")
+        .header("Authorization", "admin_password")
+        .body(b"{\"pw\": \"password\"}")
+        .reply(&routes)
+        .await;
+    assert_eq!(reply.status(), StatusCode::OK);
+
+    // Try to add but with a key that was deleted
+    let reply = warp::test::request()
+        .path("/hsv/2.3.5")
+        .method("POST")
+        .header("Authorization", "password")
+        .body(b"hsv-2.3.5")
+        .reply(&routes)
+        .await;
+    assert_eq!(reply.status(), StatusCode::UNAUTHORIZED);
+
+    // good enough tests for now
+
 }

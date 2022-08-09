@@ -10,7 +10,7 @@ pub struct Config {
     pub database_url: String,
     pub downloads_path: PathBuf,
     pub log_level: Option<String>,
-    pub keys: HashSet<String>,
+    pub admin_keys: HashSet<String>,
 }
 
 impl Config {

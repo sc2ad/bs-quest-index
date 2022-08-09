@@ -3,7 +3,7 @@
   "database-url": "database.db",
   "downloads-path": "downloads",
   "log-level": "debug",
-  "keys": [
+  "admin-keys": [
     "password"
   ]
 }

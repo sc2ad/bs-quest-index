@@ -47,6 +47,25 @@ impl From<DbMod> for Mod {
         }
     }
 }
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct PublishKey {
+    pub pw: String,
+    pub user: String,
+}
+
+struct DbPublishKey {
+    pw: String,
+    user: String,
+}
+
+impl From<DbPublishKey> for PublishKey {
+    fn from(db_key: DbPublishKey) -> Self {
+        Self {
+            pw: db_key.pw,
+            user: db_key.user,
+        }
+    }
+}
 
 impl Mod {
     pub async fn list(pool: &SqlitePool) -> sqlx::Result<Vec<String>> {
@@ -64,6 +83,28 @@ impl Mod {
 
         let affected = sqlx::query!(
             "INSERT OR IGNORE INTO mods (id, major, minor, patch) VALUES (?, ?, ?, ?)",
+            id,
+            major,
+            minor,
+            patch
+        )
+        .execute(pool)
+        .await?;
+
+        if affected.rows_affected() == 0 {
+            Ok(false)
+        } else {
+            Ok(true)
+        }
+    }
+
+    pub async fn delete(id: &str, ver: &Version, pool: &SqlitePool) -> sqlx::Result<bool> {
+        let major = ver.major as i64;
+        let minor = ver.minor as i64;
+        let patch = ver.patch as i64;
+
+        let affected = sqlx::query!(
+            "DELETE FROM mods WHERE id=? AND major=? AND minor=? AND patch=?",
             id,
             major,
             minor,
@@ -136,6 +177,74 @@ impl Mod {
             future::ready(sqlx::Result::Ok(Some(m)))
         } else {
             future::ready(sqlx::Result::Ok(None))
+        }
+    }
+}
+
+impl PublishKey {
+    fn tfm_fn(m: DbPublishKey) -> future::Ready<sqlx::Result<Option<Self>>> {
+        future::ready(sqlx::Result::Ok(Some(Self::from(m))))
+    }
+
+    pub async fn insert(user: &str, pw: &str, pool: &SqlitePool) -> sqlx::Result<bool> {
+        let affected = sqlx::query!(
+            "INSERT OR IGNORE INTO publish_keys (pw, user) VALUES (?, ?)",
+            pw,
+            user,
+        )
+        .execute(pool)
+        .await?;
+
+        if affected.rows_affected() == 0 {
+            Ok(false)
+        } else {
+            Ok(true)
+        }
+    }
+
+    pub async fn resolve_one(
+        key: &str,
+        pool: &SqlitePool,
+    ) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as!(
+            DbPublishKey,
+            "SELECT * FROM publish_keys WHERE pw = ?",
+            key
+        )
+        .fetch(pool)
+        .try_filter_map(move |m| Self::tfm_fn(m))
+        .next()
+        .await
+        .transpose()
+    }
+
+    pub async fn delete_user(user: &str, pool: &SqlitePool) -> sqlx::Result<bool> {
+        let affected = sqlx::query!(
+            "DELETE FROM publish_keys WHERE user=?",
+            user
+        )
+        .execute(pool)
+        .await?;
+
+        if affected.rows_affected() == 0 {
+            Ok(false)
+        } else {
+            Ok(true)
+        }
+    }
+
+    pub async fn delete_pw(pw: &str, pool: &SqlitePool) -> sqlx::Result<bool> {
+        let affected = sqlx::query!(
+            "DELETE FROM publish_keys WHERE pw=?",
+            pw
+        )
+        .execute(pool)
+        .await?;
+
+        if affected.rows_affected() == 0 {
+            Ok(false)
+        } else {
+            Ok(true)
         }
     }
 }

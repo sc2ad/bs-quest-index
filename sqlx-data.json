@@ -1,7 +1,6 @@
 {
   "db": "SQLite",
   "36117e0279209eab7b7473ddba10a580c3e125636450f11a2035889249f21e54": {
-    "query": "SELECT * FROM mods WHERE id = ? ORDER BY major DESC, minor DESC, patch DESC",
     "describe": {
       "columns": [
         {
@@ -25,65 +24,29 @@
           "type_info": "Int64"
         }
       ],
-      "parameters": {
-        "Right": 1
-      },
       "nullable": [
         false,
         false,
         false,
         false
-      ]
-    }
-  },
-  "3e19a2fd0b7c7caf408b625594ebeb37cbeca461b7789cc9f0aa4154bf22e611": {
-    "query": "SELECT * FROM mods WHERE id = ? ORDER BY major DESC, minor DESC, patch DESC LIMIT 1",
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Text"
-        },
-        {
-          "name": "major",
-          "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "minor",
-          "ordinal": 2,
-          "type_info": "Int64"
-        },
-        {
-          "name": "patch",
-          "ordinal": 3,
-          "type_info": "Int64"
-        }
       ],
       "parameters": {
         "Right": 1
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "SELECT * FROM mods WHERE id = ? ORDER BY major DESC, minor DESC, patch DESC"
   },
   "6ae4fdc267209b8b8de39a9bf03cda3a25356089b500b49e7fdc693c563f8563": {
-    "query": "INSERT OR IGNORE INTO mods (id, major, minor, patch) VALUES (?, ?, ?, ?)",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 4
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "INSERT OR IGNORE INTO mods (id, major, minor, patch) VALUES (?, ?, ?, ?)"
   },
   "bf05a1b7cface7955f97a7aa935e6a22e76cbc809c04bdd65d7db7a415917e5c": {
-    "query": "SELECT DISTINCT id FROM mods",
     "describe": {
       "columns": [
         {
@@ -91,13 +54,78 @@
           "ordinal": 0,
           "type_info": "Text"
         }
+      ],
+      "nullable": [
+        false
       ],
       "parameters": {
         "Right": 0
-      },
+      }
+    },
+    "query": "SELECT DISTINCT id FROM mods"
+  },
+  "d44daec6c4ddab82ea25f56632addd4b663952abaec67273f47f4839ac359e51": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "DELETE FROM mods WHERE id=? AND major=? AND minor=? AND patch=?"
+  },
+  "40e16e1673589204d30152815d74e039b23791c284aa8822bfc449ce3fac7a9e": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT OR IGNORE INTO publish_keys (pw, user) VALUES (?, ?)"
+  },
+  "5bdc7f940139540a51263de130008e6a1ace4f2dacac551004af03f4be690cd4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "pw",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "user",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
       "nullable": [
+        false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT * FROM publish_keys WHERE pw = ?"
+  },
+  "f8f91a1eb707d92fb25cec36778eb0d475bac0fba77459d7fce713f5dfcdc61d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM publish_keys WHERE user=?"
+  },
+  "1a197fabe7bbcbc783cb9073531549150639f986e77f803354e72226d7f19011": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM publish_keys WHERE pw=?"
   }
 }
