@@ -212,7 +212,7 @@ impl PublishKey {
             key
         )
         .fetch(pool)
-        .try_filter_map(move |m| Self::tfm_fn(m))
+        .try_filter_map(Self::tfm_fn)
         .next()
         .await
         .transpose()
