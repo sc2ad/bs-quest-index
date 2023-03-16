@@ -57,7 +57,7 @@ pub fn handler(
     // GET /{package}/{version}
     let download = warp::path!(String / Version)
         .and(warp::get())
-        .and_then(|id, ver| download(id, ver, config, file_repo));
+        .and_then(|id, ver| download(id, ver, file_repo));
     // POST /{package}/version
     let upload = warp::path!(String / Version)
         .and(warp::post())
@@ -163,11 +163,10 @@ async fn resolve(
     }
 }
 
-#[tracing::instrument(level = "debug", skip(config, file_repo))]
+#[tracing::instrument(level = "debug", skip(file_repo))]
 async fn download(
     id: String,
     ver: Version,
-    config: &Config,
     file_repo: &FileRepo,
 ) -> Result<impl Reply, Rejection> {
     let contents = file_repo.get_file(id, ver).await.or_nf()?;

@@ -1,4 +1,4 @@
-use std::{cell::UnsafeCell, collections::HashMap, io::Result, path::PathBuf, sync};
+use std::{collections::HashMap, io::Result, path::PathBuf};
 
 use bytes::Bytes;
 use semver::Version;
