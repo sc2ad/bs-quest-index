@@ -2,6 +2,7 @@ use crate::{
     config::Config,
     db::{Mod, PublishKey},
     errors::TryExt,
+    file_repo::FileRepo,
 };
 use bytes::Bytes;
 use semver::{Version, VersionReq};
@@ -40,6 +41,7 @@ struct OptPublishKey {
 pub fn handler(
     pool: &'static SqlitePool,
     config: &'static Config,
+    file_repo: &'static FileRepo,
 ) -> impl Filter<Extract = impl Reply, Error = Rejection> + Send + Sync + Clone + 'static {
     // GET /
     let list = warp::path::end()
@@ -55,13 +57,13 @@ pub fn handler(
     // GET /{package}/{version}
     let download = warp::path!(String / Version)
         .and(warp::get())
-        .and_then(move |id, ver| download(id, ver, config));
+        .and_then(|id, ver| download(id, ver, config, file_repo));
     // POST /{package}/version
     let upload = warp::path!(String / Version)
         .and(warp::post())
         .and(auth(pool))
         .and(warp::body::bytes())
-        .and_then(move |id, ver, contents| upload(id, ver, contents, pool, config));
+        .and_then(move |id, ver, contents| upload(id, ver, contents, pool, file_repo));
     // DELETE /{package}/{version}
     let delete = warp::path!(String / Version)
         .and(warp::delete())
@@ -161,39 +163,30 @@ async fn resolve(
     }
 }
 
-#[tracing::instrument(level = "debug", skip(config))]
-async fn download(id: String, ver: Version, config: &Config) -> Result<impl Reply, Rejection> {
-    let contents = fs::read(
-        config
-            .downloads_path
-            .join(id)
-            .join(format!("{}/{}/{}", ver.major, ver.minor, ver.patch)),
-    )
-    .await
-    .or_nf()?;
+#[tracing::instrument(level = "debug", skip(config, file_repo))]
+async fn download(
+    id: String,
+    ver: Version,
+    config: &Config,
+    file_repo: &FileRepo,
+) -> Result<impl Reply, Rejection> {
+    let contents = file_repo.get_file(id, ver).await.or_nf()?;
     Ok(contents)
 }
 
-#[tracing::instrument(level = "debug", skip(pool, config))]
+#[tracing::instrument(level = "debug", skip(pool, file_repo))]
 async fn upload(
     id: String,
     ver: Version,
     contents: Bytes,
     pool: &SqlitePool,
-    config: &Config,
+    file_repo: &FileRepo,
 ) -> Result<impl Reply, Rejection> {
     if !Mod::insert(&id, &ver, pool).await.or_ise()? {
         return Ok(warp::reply::with_status("", StatusCode::CONFLICT));
     }
 
-    let dir = config
-        .downloads_path
-        .join(id)
-        .join(format!("{}/{}", ver.major, ver.minor));
-    fs::create_dir_all(&dir).await.or_ise()?;
-
-    let file = dir.join(ver.patch.to_string());
-    fs::write(file, contents).await.or_ise()?;
+    file_repo.write_file(id, ver, contents).await.or_ise()?;
 
     Ok(warp::reply::with_status("", StatusCode::CREATED))
 }

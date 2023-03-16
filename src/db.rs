@@ -3,7 +3,7 @@
 use futures::{future, StreamExt, TryStreamExt};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use sqlx::{SqlitePool};
+use sqlx::SqlitePool;
 use std::path::Path;
 use tokio::fs;
 
@@ -68,7 +68,7 @@ impl From<DbPublishKey> for PublishKey {
 }
 
 struct SimpleDbMod {
-    id: String
+    id: String,
 }
 
 impl Mod {
