@@ -14,9 +14,14 @@ fn one() -> usize {
     1
 }
 
+#[inline]
+fn any_version() -> VersionReq {
+    VersionReq::STAR
+}
+
 #[derive(Debug, Deserialize)]
 struct ResolveQuery {
-    #[serde(default = "VersionReq::any")]
+    #[serde(default = "any_version")]
     req: VersionReq,
     #[serde(default = "one")]
     limit: usize,
@@ -30,34 +35,42 @@ struct OptPublishKey {
 
 pub fn handler(
     pool: &'static SqlitePool,
+    db: &'static mut dyn AsyncDb,
     config: &'static Config,
 ) -> impl Filter<Extract = impl Reply, Error = Rejection> + Send + Sync + Clone + 'static {
+    // GET /
     let list = warp::path::end()
         .and(warp::get())
         .and_then(move || list(pool));
 
+    // GET /{package}
     let resolve = warp::path!(String)
         .and(warp::get())
         .and(warp::query())
         .and_then(move |id, query| resolve(id, query, pool));
 
+    // GET /{package}/{version}
     let download = warp::path!(String / Version)
         .and(warp::get())
         .and_then(move |id, ver| download(id, ver, config));
+    // POST /{package}/version
     let upload = warp::path!(String / Version)
         .and(warp::post())
         .and(auth(pool))
         .and(warp::body::bytes())
         .and_then(move |id, ver, contents| upload(id, ver, contents, pool, config));
+    // DELETE /{package}/{version}
     let delete = warp::path!(String / Version)
         .and(warp::delete())
         .and(auth_admin(config))
         .and_then(move |id, ver| delete(id, ver, pool, config));
+    // POST /publish_key {key}
     let add_key = warp::path!("publish_key")
         .and(warp::post())
         .and(auth_admin(config))
         .and(warp::body::bytes())
         .and_then(move |contents| add_key(contents, pool));
+    // POST /delete_key {key}
     let delete_key = warp::path!("delete_key")
         .and(warp::post())
         .and(auth_admin(config))
@@ -86,7 +99,8 @@ fn auth(
             if PublishKey::resolve_one(k.to_str().or_ise()?, pool)
                 .await
                 .or_ise()?
-                .is_some() {
+                .is_some()
+            {
                 Ok(())
             } else {
                 Err(warp::reject::custom(crate::errors::Unauthorized))
@@ -201,18 +215,18 @@ async fn delete(
         }
         dir = dir.parent().or_ise()?.to_path_buf();
     }
-    Mod::delete(&id, &ver, pool).await.or_nf()?;
+    db.delete(&id, &ver).await.or_nf()?;
 
     Ok(warp::reply::with_status("", StatusCode::OK))
 }
 
 #[tracing::instrument(level = "debug", skip(pool))]
-async fn add_key(
-    contents: Bytes,
-    pool: &SqlitePool,
-) -> Result<impl Reply, Rejection> {
+async fn add_key(contents: Bytes, pool: &SqlitePool) -> Result<impl Reply, Rejection> {
     let pub_key: PublishKey = serde_json::from_slice(&contents).or_ise()?;
-    if !PublishKey::insert(&pub_key.user, &pub_key.pw, pool).await.or_ise()? {
+    if !PublishKey::insert(&pub_key.user, &pub_key.pw, pool)
+        .await
+        .or_ise()?
+    {
         return Ok(warp::reply::with_status("", StatusCode::CONFLICT));
     }
 
@@ -220,17 +234,13 @@ async fn add_key(
 }
 
 #[tracing::instrument(level = "debug", skip(pool))]
-async fn delete_key(
-    contents: Bytes,
-    pool: &SqlitePool,
-) -> Result<impl Reply, Rejection> {
+async fn delete_key(contents: Bytes, pool: &SqlitePool) -> Result<impl Reply, Rejection> {
     let pub_key: OptPublishKey = serde_json::from_slice(&contents).or_ise()?;
 
     if let Some(pw) = pub_key.pw {
         PublishKey::delete_pw(&pw, pool).await.or_nf()?;
         return Ok(warp::reply::with_status("", StatusCode::OK));
-    }
-    else if let Some(user) = pub_key.user {
+    } else if let Some(user) = pub_key.user {
         PublishKey::delete_user(&user, pool).await.or_nf()?;
         return Ok(warp::reply::with_status("", StatusCode::OK));
     }

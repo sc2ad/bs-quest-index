@@ -2,23 +2,31 @@
 name = "bs-quest-index"
 version = "0.1.0"
 authors = ["Raphaël Thériault <raphael_theriault@outlook.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 
 [dependencies]
-anyhow = "1.0.32"
-bytes = "0.5.6"
-futures = "0.3.5"
+anyhow = "1"
+bytes = "1"
+futures = "0.3"
 openssl = { version = "*", optional = true }
-semver = { version = "0.10.0", features = ["serde"] }
-serde = { version = "1.0.115", features = ["derive"] }
-serde_json = "1.0.57"
-sqlx = { version = "0.4.0-beta.1", features = ["macros", "migrate", "offline", "runtime-tokio", "sqlite"], default-features = false }
-tokio = { version = "0.2.22", features = ["fs", "macros", "rt-threaded"] }
-tracing = "0.1.19"
-tracing-futures = "0.2.4"
-tracing-subscriber = "0.2.11"
-warp = { version = "0.2.4", default-features = false }
+semver = { version = "1", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.6", features = ["macros", "runtime-tokio-native-tls", "migrate", "offline", "sqlite"], default-features = false }
+tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread"] }
+async-trait = "0.1"
+tracing = "0.1"
+tracing-futures = "0.2"
+tracing-subscriber = "0.3"
+warp = { version = "0.3", default-features = false }
+
+[profile.release]
+lto = true
+opt-level = 3
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3
 
 [features]
 openssl-vendored = ["openssl", "openssl/vendored"]
