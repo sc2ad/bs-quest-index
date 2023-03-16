@@ -3,7 +3,7 @@
 use futures::{future, StreamExt, TryStreamExt};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use sqlx::{Done, SqlitePool};
+use sqlx::{SqlitePool};
 use std::path::Path;
 use tokio::fs;
 
@@ -67,9 +67,13 @@ impl From<DbPublishKey> for PublishKey {
     }
 }
 
+struct SimpleDbMod {
+    id: String
+}
+
 impl Mod {
     pub async fn list(pool: &SqlitePool) -> sqlx::Result<Vec<String>> {
-        sqlx::query!("SELECT DISTINCT id FROM mods")
+        sqlx::query_as!(SimpleDbMod, "SELECT DISTINCT id FROM mods")
             .fetch(pool)
             .map_ok(|r| r.id)
             .try_collect()

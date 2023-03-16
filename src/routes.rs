@@ -39,7 +39,6 @@ struct OptPublishKey {
 
 pub fn handler(
     pool: &'static SqlitePool,
-    db: &'static mut dyn AsyncDb,
     config: &'static Config,
 ) -> impl Filter<Extract = impl Reply, Error = Rejection> + Send + Sync + Clone + 'static {
     // GET /
@@ -220,7 +219,7 @@ async fn delete(
         }
         dir = dir.parent().or_ise()?.to_path_buf();
     }
-    db.delete(&id, &ver).await.or_nf()?;
+    Mod::delete(&id, &ver, pool).await.or_nf()?;
 
     Ok(warp::reply::with_status("", StatusCode::OK))
 }
