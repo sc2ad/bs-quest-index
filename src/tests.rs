@@ -217,5 +217,4 @@ async fn test() {
     assert_eq!(reply.status(), StatusCode::UNAUTHORIZED);
 
     // good enough tests for now
-
 }

@@ -1,4 +1,8 @@
-use crate::{config::Config, db::{Mod, PublishKey}, errors::TryExt};
+use crate::{
+    config::Config,
+    db::{Mod, PublishKey},
+    errors::TryExt,
+};
 use bytes::Bytes;
 use semver::{Version, VersionReq};
 use serde::Deserialize;
@@ -202,7 +206,8 @@ async fn delete(
     pool: &SqlitePool,
     config: &Config,
 ) -> Result<impl Reply, Rejection> {
-    let mut dir = config.downloads_path
+    let mut dir = config
+        .downloads_path
         .join(&id)
         .join(format!("{}/{}", ver.major, ver.minor));
 

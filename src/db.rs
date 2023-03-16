@@ -202,29 +202,19 @@ impl PublishKey {
         }
     }
 
-    pub async fn resolve_one(
-        key: &str,
-        pool: &SqlitePool,
-    ) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as!(
-            DbPublishKey,
-            "SELECT * FROM publish_keys WHERE pw = ?",
-            key
-        )
-        .fetch(pool)
-        .try_filter_map(Self::tfm_fn)
-        .next()
-        .await
-        .transpose()
+    pub async fn resolve_one(key: &str, pool: &SqlitePool) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as!(DbPublishKey, "SELECT * FROM publish_keys WHERE pw = ?", key)
+            .fetch(pool)
+            .try_filter_map(Self::tfm_fn)
+            .next()
+            .await
+            .transpose()
     }
 
     pub async fn delete_user(user: &str, pool: &SqlitePool) -> sqlx::Result<bool> {
-        let affected = sqlx::query!(
-            "DELETE FROM publish_keys WHERE user=?",
-            user
-        )
-        .execute(pool)
-        .await?;
+        let affected = sqlx::query!("DELETE FROM publish_keys WHERE user=?", user)
+            .execute(pool)
+            .await?;
 
         if affected.rows_affected() == 0 {
             Ok(false)
@@ -234,12 +224,9 @@ impl PublishKey {
     }
 
     pub async fn delete_pw(pw: &str, pool: &SqlitePool) -> sqlx::Result<bool> {
-        let affected = sqlx::query!(
-            "DELETE FROM publish_keys WHERE pw=?",
-            pw
-        )
-        .execute(pool)
-        .await?;
+        let affected = sqlx::query!("DELETE FROM publish_keys WHERE pw=?", pw)
+            .execute(pool)
+            .await?;
 
         if affected.rows_affected() == 0 {
             Ok(false)
