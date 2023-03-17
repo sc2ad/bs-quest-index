@@ -164,11 +164,7 @@ async fn resolve(
 }
 
 #[tracing::instrument(level = "debug", skip(file_repo))]
-async fn download(
-    id: String,
-    ver: Version,
-    file_repo: &FileRepo,
-) -> Result<impl Reply, Rejection> {
+async fn download(id: String, ver: Version, file_repo: &FileRepo) -> Result<impl Reply, Rejection> {
     let contents = file_repo.get_file(id, ver).await.or_nf()?;
     Ok(contents)
 }
