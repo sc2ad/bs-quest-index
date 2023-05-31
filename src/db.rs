@@ -3,7 +3,7 @@
 use futures::{future, StreamExt, TryStreamExt};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use sqlx::{Done, SqlitePool};
+use sqlx::SqlitePool;
 use std::path::Path;
 use tokio::fs;
 
@@ -67,9 +67,13 @@ impl From<DbPublishKey> for PublishKey {
     }
 }
 
+struct SimpleDbMod {
+    id: String,
+}
+
 impl Mod {
     pub async fn list(pool: &SqlitePool) -> sqlx::Result<Vec<String>> {
-        sqlx::query!("SELECT DISTINCT id FROM mods")
+        sqlx::query_as!(SimpleDbMod, "SELECT DISTINCT id FROM mods")
             .fetch(pool)
             .map_ok(|r| r.id)
             .try_collect()
@@ -202,29 +206,19 @@ impl PublishKey {
         }
     }
 
-    pub async fn resolve_one(
-        key: &str,
-        pool: &SqlitePool,
-    ) -> sqlx::Result<Option<Self>> {
-        sqlx::query_as!(
-            DbPublishKey,
-            "SELECT * FROM publish_keys WHERE pw = ?",
-            key
-        )
-        .fetch(pool)
-        .try_filter_map(Self::tfm_fn)
-        .next()
-        .await
-        .transpose()
+    pub async fn resolve_one(key: &str, pool: &SqlitePool) -> sqlx::Result<Option<Self>> {
+        sqlx::query_as!(DbPublishKey, "SELECT * FROM publish_keys WHERE pw = ?", key)
+            .fetch(pool)
+            .try_filter_map(Self::tfm_fn)
+            .next()
+            .await
+            .transpose()
     }
 
     pub async fn delete_user(user: &str, pool: &SqlitePool) -> sqlx::Result<bool> {
-        let affected = sqlx::query!(
-            "DELETE FROM publish_keys WHERE user=?",
-            user
-        )
-        .execute(pool)
-        .await?;
+        let affected = sqlx::query!("DELETE FROM publish_keys WHERE user=?", user)
+            .execute(pool)
+            .await?;
 
         if affected.rows_affected() == 0 {
             Ok(false)
@@ -234,12 +228,9 @@ impl PublishKey {
     }
 
     pub async fn delete_pw(pw: &str, pool: &SqlitePool) -> sqlx::Result<bool> {
-        let affected = sqlx::query!(
-            "DELETE FROM publish_keys WHERE pw=?",
-            pw
-        )
-        .execute(pool)
-        .await?;
+        let affected = sqlx::query!("DELETE FROM publish_keys WHERE pw=?", pw)
+            .execute(pool)
+            .await?;
 
         if affected.rows_affected() == 0 {
             Ok(false)

@@ -4,7 +4,9 @@ use tokio::fs;
 use tracing_subscriber::fmt::format::FmtSpan;
 use warp::http::StatusCode;
 
-#[tokio::test(threaded_scheduler)]
+use crate::file_repo::FileRepo;
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test() {
     tracing_subscriber::fmt()
         .with_env_filter("debug")
@@ -26,7 +28,9 @@ async fn test() {
     }));
     let pool = crate::db::connect(&config.database_url).await.unwrap();
 
-    let routes = crate::routes::handler(pool, config);
+    let file_repo = Box::leak(Box::new(FileRepo::new(config.downloads_path.clone())));
+
+    let routes = crate::routes::handler(pool, config, file_repo);
 
     // Upload our mod upload key
     let reply = warp::test::request()
@@ -217,5 +221,4 @@ async fn test() {
     assert_eq!(reply.status(), StatusCode::UNAUTHORIZED);
 
     // good enough tests for now
-
 }
