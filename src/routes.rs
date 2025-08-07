@@ -166,7 +166,12 @@ async fn resolve(
 #[tracing::instrument(level = "debug", skip(file_repo))]
 async fn download(id: String, ver: Version, file_repo: &FileRepo) -> Result<impl Reply, Rejection> {
     let contents = file_repo.get_file(id, ver).await.or_nf()?;
-    Ok(contents)
+    let reply = warp::reply::with_header(
+        contents,
+        "Content-Type",
+        "application/json; charset=utf-8",
+    );
+    Ok(reply)
 }
 
 #[tracing::instrument(level = "debug", skip(pool, file_repo))]
