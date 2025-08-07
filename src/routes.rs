@@ -10,7 +10,7 @@ use serde::Deserialize;
 use sqlx::SqlitePool;
 use tokio::fs;
 use warp::{
-    http::{HeaderValue, StatusCode},
+    http::{HeaderValue, StatusCode, header::CONTENT_TYPE},
     Filter, Rejection, Reply,
 };
 
@@ -166,7 +166,12 @@ async fn resolve(
 #[tracing::instrument(level = "debug", skip(file_repo))]
 async fn download(id: String, ver: Version, file_repo: &FileRepo) -> Result<impl Reply, Rejection> {
     let contents = file_repo.get_file(id, ver).await.or_nf()?;
-    Ok(contents)
+    let reply = warp::reply::with_header(
+        contents,
+        CONTENT_TYPE,
+        "application/json; charset=utf-8",
+    );
+    Ok(reply)
 }
 
 #[tracing::instrument(level = "debug", skip(pool, file_repo))]

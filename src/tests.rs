@@ -3,8 +3,11 @@ use std::path::PathBuf;
 use tokio::fs;
 use tracing_subscriber::fmt::format::FmtSpan;
 use warp::http::StatusCode;
+use warp::http::header::CONTENT_TYPE;
 
 use crate::file_repo::FileRepo;
+
+const JSON_CONTENT_TYPE: &str = "application/json";
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test() {
@@ -110,6 +113,13 @@ async fn test() {
         .method("GET")
         .reply(&routes)
         .await;
+    assert!(
+        reply
+            .headers()
+            .get(CONTENT_TYPE)
+            .map(|v| v.to_str().unwrap())
+            .is_some_and(|v| v.starts_with(JSON_CONTENT_TYPE)),
+    );
     assert_eq!(reply.status(), StatusCode::OK);
     assert_eq!(reply.body().as_ref(), b"bshook-1.0.0");
 
@@ -130,6 +140,13 @@ async fn test() {
         .reply(&routes)
         .await;
     assert_eq!(reply.status(), StatusCode::OK);
+    assert!(
+        reply
+            .headers()
+            .get(CONTENT_TYPE)
+            .map(|v| v.to_str().unwrap())
+            .is_some_and(|v| v.starts_with(JSON_CONTENT_TYPE)),
+    );
     assert_eq!(
         serde_json::from_slice::<'_, crate::db::Mod>(reply.body().as_ref()).unwrap(),
         crate::db::Mod {
@@ -146,6 +163,13 @@ async fn test() {
         .reply(&routes)
         .await;
     assert_eq!(reply.status(), StatusCode::OK);
+    assert!(
+        reply
+            .headers()
+            .get(CONTENT_TYPE)
+            .map(|v| v.to_str().unwrap())
+            .is_some_and(|v| v.starts_with(JSON_CONTENT_TYPE)),
+    );
     assert_eq!(
         serde_json::from_slice::<'_, Vec<crate::db::Mod>>(reply.body().as_ref()).unwrap(),
         vec![
@@ -175,6 +199,13 @@ async fn test() {
         .method("GET")
         .reply(&routes)
         .await;
+    assert!(
+        reply
+            .headers()
+            .get(CONTENT_TYPE)
+            .map(|v| v.to_str().unwrap())
+            .is_some_and(|v| v.starts_with(JSON_CONTENT_TYPE)),
+    );
     assert_eq!(
         serde_json::from_slice::<'_, Vec<&str>>(reply.body().as_ref()).unwrap(),
         vec!["bshook", "hsv"]

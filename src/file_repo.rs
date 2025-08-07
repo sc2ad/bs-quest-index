@@ -23,6 +23,9 @@ impl FileRepo {
             return Ok(o.clone());
         }
 
+        // lock to ensure no other thread is reading
+        let mut cache = self.cache.write().await;
+
         let contents: String = fs::read_to_string(
             self.path
                 .join(&id)
@@ -30,10 +33,7 @@ impl FileRepo {
         )
         .await?;
 
-        self.cache
-            .write()
-            .await
-            .insert((id.clone(), ver.clone()), contents.clone());
+        cache.insert((id.clone(), ver.clone()), contents.clone());
         Ok(contents)
     }
 
